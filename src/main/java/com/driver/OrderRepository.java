@@ -61,7 +61,7 @@ public class OrderRepository {
     }
 
     public void deletePartnerById(String partnerId) {
-        if(partnerDB.containsKey(partnerId)){
+        if(partnerOrders.containsKey(partnerId)){
             for (String order:partnerOrders.get(partnerId)) {
                 orderPartnerDB.remove(order);
             }
@@ -75,6 +75,7 @@ public class OrderRepository {
         orderDB.remove(orderId);
         if (orderPartnerDB.containsKey(orderId)) {
             partnerOrders.get(orderPartnerDB.get(orderId)).remove(orderId);
+            partnerDB.get(orderPartnerDB.get(orderId)).setNumberOfOrders(partnerDB.get(orderPartnerDB.get(orderId)).getNumberOfOrders()-1);
             orderPartnerDB.remove(orderId);
         }
     }
