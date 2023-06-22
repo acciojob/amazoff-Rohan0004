@@ -55,10 +55,19 @@ public class OrderService {
     }
 
     public String getLastDeliveryTimeByPartnerId(String partnerId) {
-        return orderRepository.getLastDeliveryTimeByPartnerId(partnerId);
+        int time= orderRepository.getLastDeliveryTimeByPartnerId(partnerId);
+        String hh=String.valueOf(time/60);
+        String mm=String.valueOf(time%60);
+
+        if(hh.length()<2) hh="0"+hh;
+        if (mm.length()<2) mm="0"+mm;
+
+        return hh+":"+mm;
     }
 
     public Integer getOrdersLeftAfterGivenTimeByPartnerId(String time, String partnerId) {
-        return orderRepository.getOrdersLeftAfterGivenTimeByPartnerId(time,partnerId);
+        String t[]=time.split(":");
+        int min=Integer.parseInt(t[0])*60+Integer.parseInt(t[1]);
+        return orderRepository.getOrdersLeftAfterGivenTimeByPartnerId(min,partnerId);
     }
 }

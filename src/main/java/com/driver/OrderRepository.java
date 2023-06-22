@@ -24,11 +24,13 @@ public class OrderRepository {
     }
 
     public void addOrderPartnerPair(String orderId, String partnerId) {
-        if(!partnerDB.containsKey(partnerId) || !orderDB.containsKey(orderId)) return;
-        orderPartnerDB.put(orderId,partnerId);
-        partnerDB.get(partnerId).setNumberOfOrders(partnerDB.get(partnerId).getNumberOfOrders()+1);
-        partnerOrders.putIfAbsent(partnerId,new ArrayList<>());
-        partnerOrders.get(partnerId).add(orderId);
+        if(partnerDB.containsKey(partnerId) && orderDB.containsKey(orderId)) {
+            orderPartnerDB.put(orderId,partnerId);
+            List<String> orders=partnerOrders.getOrDefault(partnerId,new ArrayList<>());
+            orders.add(orderId);
+            partnerOrders.put(partnerId,orders);
+            partnerDB.get(partnerId).setNumberOfOrders(orders.size());
+        }
     }
 
     public Order getOrderById(String orderId) {
@@ -40,7 +42,7 @@ public class OrderRepository {
     }
 
     public Integer getOrderCountByPartnerId(String partnerId) {
-        if(!partnerOrders.containsKey(partnerId)) return 0;
+        if (!partnerOrders.containsKey(partnerId)) return 0;
         return partnerOrders.get(partnerId).size();
     }
 
@@ -50,9 +52,7 @@ public class OrderRepository {
 
     public List<String> getAllOrders() {
         List<String> orders=new ArrayList<>();
-        for (String order:orderDB.keySet()) {
-            orders.add(order);
-        }
+        orders.addAll(orderDB.keySet());
         return orders;
     }
 
@@ -61,44 +61,49 @@ public class OrderRepository {
     }
 
     public void deletePartnerById(String partnerId) {
-        if(partnerOrders.containsKey(partnerId)){
-            for (String order:partnerOrders.get(partnerId)) {
-                orderPartnerDB.remove(order);
-            }
-            partnerDB.remove(partnerId);
-            partnerOrders.remove(partnerId);
+        partnerDB.remove(partnerId);
+
+        List<String> orders=partnerOrders.get(partnerId);
+        partnerOrders.remove(partnerId);
+        if (orders==null) return;
+        for (String order:orders) {
+            orderPartnerDB.remove(order);
         }
+
 
     }
 
     public void deleteOrderById(String orderId) {
         orderDB.remove(orderId);
-        if (orderPartnerDB.containsKey(orderId)) {
-            partnerOrders.get(orderPartnerDB.get(orderId)).remove(orderId);
-            partnerDB.get(orderPartnerDB.get(orderId)).setNumberOfOrders(partnerDB.get(orderPartnerDB.get(orderId)).getNumberOfOrders()-1);
-            orderPartnerDB.remove(orderId);
+
+        String partner = orderPartnerDB.get(orderId);
+        orderPartnerDB.remove(orderId);
+
+        if (partnerOrders.get(partner)!=null) {
+            partnerOrders.get(partner).remove(orderId);
+            partnerDB.get(partner).setNumberOfOrders(partnerOrders.get(partner).size());
         }
     }
 
-    public String getLastDeliveryTimeByPartnerId(String partnerId) {
+    public int getLastDeliveryTimeByPartnerId(String partnerId) {
          List<String> orders=partnerOrders.get(partnerId);
-         if (orders==null) return null;
+        if (orders==null) return 0;
          int time=0;
          for (String order:orders) {
             int orderTime=orderDB.get(order).getDeliveryTime();
             time=Math.max(time,orderTime);
          }
-         return time/60+":"+(time-(time/60)*60);
+         return time;
 
     }
 
-    public Integer getOrdersLeftAfterGivenTimeByPartnerId(String time, String partnerId) {
+    public Integer getOrdersLeftAfterGivenTimeByPartnerId(int time, String partnerId) {
         List<String> orders=partnerOrders.get(partnerId);
-        if (orders==null) return null;
-        Integer cnt=0,t=Integer.parseInt(time.substring(0,2),10)*60+Integer.parseInt(time.substring(3));
+        if (orders==null) return 0;
+        Integer cnt=0;
         for (String order:orders) {
             int orderTime=orderDB.get(order).getDeliveryTime();
-            if(orderTime>t) cnt++;
+            if(orderTime>time) cnt++;
         }
         return cnt;
     }
